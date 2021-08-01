@@ -3,11 +3,14 @@ import { useCallback, useState } from "react";
 import { useHistory } from "react-router-dom";
 
 import { User } from "../types/api/user";
+import { useMessage } from "./useMessage";
+import { useLoginUser } from "../hooks/useLoginUser";
 
 export const useAuth = () => {
   const history = useHistory();
-
+  const { showMessage } = useMessage();
   const [loading, setLoading] = useState<boolean>(false);
+  const { setLoginUser } = useLoginUser();
 
   const login = useCallback(
     (id: string) => {
@@ -17,19 +20,21 @@ export const useAuth = () => {
         .get<User>(`https://jsonplaceholder.typicode.com/users/${id}`)
         .then((res) => {
           if (res.data) {
+            const isAdmin = res.data.id === 10 ? true : false;
+            setLoginUser({ ...res.data, isAdmin });
+            showMessage({ title: "Login!", status: "success" });
             history.push("/home");
           } else {
-            alert("User Not Found");
-            console.log("User Not Found");
+            showMessage({ title: "User Not Found", status: "error" });
+            setLoading(false);
           }
         })
         .catch(() => {
-          alert("Cannot Login");
-          console.log("Cannot Login");
-        })
-        .finally(() => setLoading(false));
+          showMessage({ title: "Cannot Login", status: "error" });
+          setLoading(false);
+        });
     },
-    [history]
+    [history, showMessage, setLoginUser]
   );
   return { login, loading };
 };
